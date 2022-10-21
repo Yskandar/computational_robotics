@@ -19,7 +19,7 @@ V = chess_grid
 E = []
 
 
-for i in range(63):
+for i in range(64):
     if V[i][0] + 2 < 8:                 # +2 for x --> +/- 1 for y
         if V[i][1] + 1 < 8:
             next_state = i + 2 + 8
