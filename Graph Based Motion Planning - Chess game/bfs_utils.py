@@ -203,11 +203,3 @@ print('Length of the path found with depth_first_search:', len(path_dfs))
 
 
 # We can see that DFS definitely does not give you the shortest path...
-
-
-
-
-
-
-
-
