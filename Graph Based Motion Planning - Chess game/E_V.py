@@ -52,5 +52,10 @@ for i in range(64):
             next_state = i -16 - 1
             E.append([i, next_state])   
 
-print(E)
-print(len(E))
+#print(E)
+#print(len(E))
+
+
+#BFS coding to find a way from initial state to final state
+
+
