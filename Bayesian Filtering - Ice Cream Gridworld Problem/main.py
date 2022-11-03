@@ -9,6 +9,12 @@ class Gridworld:
         self.obstacle_matrix = np.zeros(shape = (width, length))
         self.stores = []
         self.pe = 0.3
+        self.states = []
+
+        # instanciate the state space
+        for x in range(width):
+            for y in range(length):
+                self.states.append([x, y])
 
     def place_obstacles(self, obstacles):
         for obstacle in obstacles:
@@ -40,8 +46,8 @@ class Gridworld:
         actions_array = np.array([[0,0],[1,0],[0,1],[-1,0],[0,-1]])
 
         next_states = np.array(state) + actions_array
-
-        adjacent_states = [state for state in next_states if self.is_in_statespace(state) and not self.is_in_obstacles(state)]
+        adjacent_states = [list(state) for state in next_states]
+        #adjacent_states = [state for state in next_states if self.is_in_statespace(state) and not self.is_in_obstacles(state)]
 
         return adjacent_states
     
@@ -59,9 +65,34 @@ class Gridworld:
         a = np.ceil(h) - h
         return np.random.choice([np.ceil(h), np.floor(h)], p=[1 - a, a])
 
+    def compute_next_state(state, action):
+        a1, a2 = action
+        return [state[0] + a1, state[1] + a2]
+
+
     def transition(self, state, action):
         adjacent_states = self.get_adjacent_states(state)
-        
+        next_state = compute_next_state(state, action)  # add the action to the state
+        print('naïve next state:', next_state)
+        adjacent_states_if_fail = [state for state in adjacent_states if state != next_state]
+        print('undesired states:', adjacent_states_if_fail)
+        roll_dice_state = np.random.choice(adjacent_states_if_fail + [next_state], p=[self.pe/4, self.pe/4, self.pe/4, self.pe/4, 1-self.pe])
+        print('rolled state', roll_dice_state)
+        if is_in_obstacles(roll_dice_state) or not is_in_statespace(roll_dice_state): # if the next state is an obstacle or off world, don't move
+            print('state is not in the environment or is an obstacle: not moving')
+            return state
+        else:
+            return roll_dice_state
+
+world = 
+
+
+
+
+
+
+
+
 
 
 
