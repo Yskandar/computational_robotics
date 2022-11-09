@@ -97,6 +97,19 @@ class Gridworld:
             print('Moving to rolled state')
             return roll_dice_state
 
+
+    def transitionProbabilities(self,next_state, state, action):
+        if next_state == self.compute_next_state(state,action):
+            prob = 1-self.pe
+            return prob
+        elif next_state != self.compute_next_state(state,action):
+            adjacent_states = len(self.get_adjacent_states(self,state))
+            prob = self.is_adjacent(next_state,state) * pe/(adjacent_states-1)
+            return prob
+        else:
+            return 0
+
+
     def compute_harmonic_means(self):
         # harmonic mean for all the states in the belief state
 
