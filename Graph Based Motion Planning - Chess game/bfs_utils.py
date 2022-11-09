@@ -188,7 +188,6 @@ def depth_first_search(chess_board, init_node, goal_node):  # just explores the 
 
 
 # Create the graph and all the nodes
-
 width = 8
 length = 8
 chess_board = Graph(width, length)
