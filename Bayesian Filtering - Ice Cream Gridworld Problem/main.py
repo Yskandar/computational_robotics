@@ -124,6 +124,14 @@ class Gridworld:
         posteriors = self.compute_posteriors(observation)
         return belief_state * posteriors
 
+    def compute_probabilities(self, action):
+        state_matrix_1 = np.broadcast_to(np.array(self.states), shape = (len(self.states), len(self.states)))
+        state_matrix_2 = np.broadcast_to(np.array(self.states).T, shape = (len(self.states), len(self.states)))
+        probabilities = np.empty(shape = (len(self.states), len(self.states)))
+
+        a = np.where(state_matrix == self.compute_next_state(state_matrix, action) 
+                    and self.is_in_statespace(state_matrix) and not self.is_in_obstacles(state_matrix), 1 - self.pe, 0)
+
     
 
     
