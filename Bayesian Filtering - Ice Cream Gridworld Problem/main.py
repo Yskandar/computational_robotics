@@ -46,12 +46,13 @@ class Gridworld:
 
         return len(adjacent_states)
     
-    def get_adjacent_states(self, state):
+    def get_adjacent_states(self, state, mode = 'transition'):
         actions_array = np.array([[0,0],[1,0],[0,1],[-1,0],[0,-1]])
 
         next_states = np.array(state) + actions_array
         adjacent_states = [list(state) for state in next_states]
-        #adjacent_states = [state for state in next_states if self.is_in_statespace(state) and not self.is_in_obstacles(state)]
+        if mode == 'probabilities':
+            adjacent_states = [next_state for next_state in next_states if self.is_in_statespace(next_state) and not self.is_in_obstacles(next_state) and next_state != state]
 
         return adjacent_states
     
@@ -98,14 +99,21 @@ class Gridworld:
             return roll_dice_state
 
 
-    def transitionProbabilities(self,next_state, state, action):
-        if next_state == self.compute_next_state(state,action):
-            prob = 1-self.pe
-            return prob
-        elif next_state != self.compute_next_state(state,action):
-            adjacent_states = len(self.get_adjacent_states(self,state))
-            prob = self.is_adjacent(next_state,state) * pe/(adjacent_states-1)
-            return prob
+    def transitionProbabilities(self, state, next_state, action):
+        theoretical_next_state = self.compute_next_state(state,action)
+        num_adjacent_states = len(self.get_adjacent_states(state))
+        if next_state == theoretical_next_state and self.is_in_statespace(state) and not self.is_in_obstacles(state) and next_state != state:
+            return 1 - self.pe
+
+        elif next_state != theoretical_next_state and self.is_in_statespace(state) and not self.is_in_obstacles(state) and next_state != state: 
+            return self.is_adjacent(next_state,state) * self.pe/4
+
+        elif next_state != theoretical_next_state and self.is_in_statespace(state) and not self.is_in_obstacles(state) and next_state == state:
+            return self.is_adjacent(next_state,state) * (self.pe - (num_adjacent_states * self.pe/4) )
+        
+        elif next_state == theoretical_next_state == state:
+            return 1
+        
         else:
             return 0
 
@@ -138,16 +146,20 @@ class Gridworld:
         return belief_state * posteriors
 
     def compute_probabilities(self, action):
-        state_matrix_1 = np.broadcast_to(np.array(self.states), shape = (len(self.states), len(self.states)))
-        state_matrix_2 = np.broadcast_to(np.array(self.states).T, shape = (len(self.states), len(self.states)))
         probabilities = np.empty(shape = (len(self.states), len(self.states)))
 
-        a = np.where(state_matrix == self.compute_next_state(state_matrix, action) 
-                    and self.is_in_statespace(state_matrix) and not self.is_in_obstacles(state_matrix), 1 - self.pe, 0)
+        for i in range(len(self.states)):
+            for j in range(len(self.states)):
+                current_state = self.states[i]
+                next_state = self.states[j]
+                probabilities[i, j] = self.transitionProbabilities(current_state, next_state, action)
+        
+        return probabilities
 
-    
+    def dynamics_update(self, belief_state, action):
+        probabilities_matrix = self.compute_probabilities(action)
 
-    
+        return belief_state @ probabilities_matrix 
 
 
 
@@ -170,8 +182,22 @@ print(world.transition(initial_state, action))
 
 
 # Belief state
+initial_belief = np.random.rand(1, len(world.states))
+current_state = [0, 0]
+action = [1, 0]
 
-initial_belief = np.random.rand(5, 5)
+# take the action
+probabilities_matrix = world.compute_probabilities(action)
+print(probabilities_matrix)
+
+# update the belief_state
+new_belief = world.dynamics_update(initial_belief, action)
+
+# Get new observation
+obs = world.observation(current_state)
+
+# update the belief_state
+new_belief = world.observation_update(new_belief, obs)
 
 
 
