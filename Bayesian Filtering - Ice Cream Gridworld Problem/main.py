@@ -18,7 +18,7 @@ class Gridworld:
                 self.states.append([x, y])
 
         # compute the harmonic means
-        self.compute_harmonic_means()
+        #self.compute_harmonic_means()
 
     def place_obstacles(self, obstacles):
         for obstacle in obstacles:
@@ -52,7 +52,7 @@ class Gridworld:
         next_states = np.array(state) + actions_array
         adjacent_states = [list(state) for state in next_states]
         if mode == 'probabilities':
-            adjacent_states = [next_state for next_state in next_states if self.is_in_statespace(next_state) and not self.is_in_obstacles(next_state) and next_state != state]
+            adjacent_states = [next_state for next_state in next_states if self.is_in_statespace(next_state) and not self.is_in_obstacles(next_state) and np.all(next_state != state)]
 
         return adjacent_states
     
@@ -60,8 +60,8 @@ class Gridworld:
         return int(np.linalg.norm(np.array(s1) - np.array(s2)) <= 1)
 
     def harmonic_mean(self, state):
-        d1 = np.linalg.norm(np.array(stores[0] - state))
-        d2 = np.linalg.norm(np.array(stores[1] - state))
+        d1 = np.linalg.norm(np.array(self.stores[0]) - np.array(state))
+        d2 = np.linalg.norm(np.array(self.stores[1]) - np.array(state))
 
         return 2/(1/d1 + 1/d2)
 
@@ -91,7 +91,7 @@ class Gridworld:
         roll_dice_state = (adjacent_states_if_fail + [next_state])[roll_dice_state_idx]
         print('rolled state', roll_dice_state)
         print('rolled state is desired state: ', roll_dice_state == next_state)
-        if self.is_in_obstacles(roll_dice_state) or not self.is_in_statespace(roll_dice_state): # if the next state is an obstacle or off world, don't move
+        if not self.is_in_statespace(roll_dice_state) or self.is_in_obstacles(roll_dice_state) : # if the next state is an obstacle or off world, don't move
             print('state is not in the environment or is an obstacle: not moving')
             return state
         else:
@@ -101,7 +101,7 @@ class Gridworld:
 
     def transitionProbabilities(self, state, next_state, action):
         theoretical_next_state = self.compute_next_state(state,action)
-        num_adjacent_states = len(self.get_adjacent_states(state))
+        num_adjacent_states = len(self.get_adjacent_states(state, mode="probabilities"))
         if next_state == theoretical_next_state and self.is_in_statespace(state) and not self.is_in_obstacles(state) and next_state != state:
             return 1 - self.pe
 
@@ -119,12 +119,11 @@ class Gridworld:
 
 
     def compute_harmonic_means(self):
-        # harmonic mean for all the states in the belief state
 
+        # harmonic mean for all the states in the belief state
         d1 = np.linalg.norm(np.array(self.stores[0]) - np.array(self.states), axis = 1)
         d2 = np.linalg.norm(np.array(self.stores[1]) - np.array(self.states), axis = 1)
-        
-        self.harmonic_means = 2/((1/d1) + (1/d2))
+        self.harmonic_means = np.reshape(2/((1/d1) + (1/d2)), (1, len(self.states)))
 
     def compute_posteriors(self, observation):
         """
@@ -135,15 +134,15 @@ class Gridworld:
         floor = np.floor(self.harmonic_means)
         ceil = np.ceil(self.harmonic_means)
 
-        a = np.where(floor == observation, 1, 0) * (1 - (ceil - self.harmonic_means))
-        b = np.where(ceil == observation, 1, 0) * (ceil - self.harmonic_means)
+        a = np.where(ceil == observation, 1, 0) * (1 - (ceil - self.harmonic_means))
+        b = np.where(floor == observation, 1, 0) * (ceil - self.harmonic_means)
 
         return a + b
 
     def observation_update(self, belief_state, observation):
         
         posteriors = self.compute_posteriors(observation)
-        return belief_state * posteriors
+        return (belief_state * posteriors) / np.sum(belief_state * posteriors)
 
     def compute_probabilities(self, action):
         probabilities = np.empty(shape = (len(self.states), len(self.states)))
@@ -159,7 +158,7 @@ class Gridworld:
     def dynamics_update(self, belief_state, action):
         probabilities_matrix = self.compute_probabilities(action)
 
-        return belief_state @ probabilities_matrix 
+        return (belief_state @ probabilities_matrix) / np.sum(belief_state @ probabilities_matrix)
 
 
 
@@ -173,32 +172,33 @@ world.place_obstacles(obstacles)
 stores = [[2, 0], [2, 2]]
 world.place_icecream_stores(stores)
 
-# initial state
-initial_state = [0, 0]
-action = [-1, 0]
-world.is_in_statespace([0,1])
-print(world.transition(initial_state, action))
+# Compute harmonic means
+world.compute_harmonic_means()
 
-
-
-# Belief state
-initial_belief = np.random.rand(1, len(world.states))
 current_state = [0, 0]
-action = [1, 0]
+current_belief = np.random.rand(1, len(world.states))
+for i in range(100):
+    # initial state
+    action = [1, 0]
+    world.is_in_statespace([0,1])
+    current_state = world.transition(current_state, action)
+    print(world.transition(current_state, action))
 
-# take the action
-probabilities_matrix = world.compute_probabilities(action)
-print(probabilities_matrix)
 
-# update the belief_state
-new_belief = world.dynamics_update(initial_belief, action)
 
-# Get new observation
-obs = world.observation(current_state)
+    # take the action
+    probabilities_matrix = world.compute_probabilities(action)
+    print(probabilities_matrix)
 
-# update the belief_state
-new_belief = world.observation_update(new_belief, obs)
+    # update the belief_state
+    current_belief = world.dynamics_update(current_belief, action)
 
+    # Get new observation
+    obs = world.observation(current_state)
+    print(obs)
+    # update the belief_state
+    current_belief = world.observation_update(current_belief, obs)
+    print(current_belief)
 
 
 
