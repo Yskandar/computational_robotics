@@ -204,8 +204,9 @@ world.place_icecream_stores(stores)
 world.compute_harmonic_means()
 
 current_state = [0, 0]
-current_belief = np.random.rand(1, len(world.states))
-for i in range(1000):
+p = 1/len(world.states)
+current_belief = np.ones((1,len(world.states))) * p
+for i in range(100):
     # initial state
     action = [1, 0]
     world.is_in_statespace([0,1])
