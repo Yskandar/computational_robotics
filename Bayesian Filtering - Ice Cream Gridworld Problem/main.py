@@ -52,8 +52,7 @@ class Gridworld:
         next_states = np.array(state) + actions_array
         adjacent_states = [list(state) for state in next_states]
         if mode == 'probabilities':
-            adjacent_states = [next_state for next_state in next_states if self.is_in_statespace(next_state) and not self.is_in_obstacles(next_state) and np.all(next_state != state)]
-
+            adjacent_states = [next_state for next_state in next_states if self.is_in_statespace(next_state) and not self.is_in_obstacles(next_state) and np.any(next_state != state)]
         return adjacent_states
     
     def is_adjacent(self, s1, s2):
@@ -118,6 +117,35 @@ class Gridworld:
             return 0
 
 
+    """
+    def probabilities(self, state, next_state, action):
+        
+		probability = 0
+		# States must not be occupied by obstacle and they must be adjacent
+		if not self.is_in_obstacles(next_state) and not self.is_in_obstacles(state) and self.is_adjacent(next_state, state):
+			# If desired action succeeded
+			if next_state == self.compute_next_state(state, action):
+				# If the state changes
+				if state == next_state:
+					probability = 1
+				else:
+					probability = 1 - self.pe
+			# If desired action failed
+			else:
+				# If the state changes
+				if state == next_state:
+					probability = 1
+					# Subtract the probability of all surrounding states
+					for s in self.get_adjacent_states(state, mode = "probabilities"):
+						if s != state:
+							probability -= self.probabilities(state, action, s)
+				else:
+					if action != [0, 0]:
+						probability = self.pe/4.0
+        return probability
+    """
+
+
     def compute_harmonic_means(self):
 
         # harmonic mean for all the states in the belief state
@@ -177,28 +205,30 @@ world.compute_harmonic_means()
 
 current_state = [0, 0]
 current_belief = np.random.rand(1, len(world.states))
-for i in range(100):
+for i in range(1000):
     # initial state
     action = [1, 0]
     world.is_in_statespace([0,1])
     current_state = world.transition(current_state, action)
-    print(world.transition(current_state, action))
+    print("current_state", current_state)
 
 
 
     # take the action
     probabilities_matrix = world.compute_probabilities(action)
-    print(probabilities_matrix)
+    #print(probabilities_matrix)
 
     # update the belief_state
     current_belief = world.dynamics_update(current_belief, action)
 
     # Get new observation
     obs = world.observation(current_state)
-    print(obs)
+    print("observation", obs)
     # update the belief_state
     current_belief = world.observation_update(current_belief, obs)
-    print(current_belief)
+    print("current_belief", current_belief)
+
+print(world.states)
 
 
 
